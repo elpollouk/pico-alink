@@ -1,6 +1,14 @@
 from sys import stdin
+import lcd
+import log
 
-print("Starting...")
+ENABLE_LCD = True
+
+if ENABLE_LCD:
+    log.init(lcd.Screen())
+
+log.log("Starting...")
+log.log("~ for debug mode")
 
 def com_read(length=1):
     data = stdin.read(length)
@@ -61,4 +69,4 @@ try:
 except Terminated:
     pass
 
-print("aLink shutdown")
+log.log("aLink shutdown")
