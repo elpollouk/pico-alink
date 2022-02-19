@@ -1,21 +1,16 @@
-import lcd_rp2040lcd096
-
-NORMAL = lcd_rp2040lcd096.rgb(192, 192, 192)
-ERROR = lcd_rp2040lcd096.rgb(192, 0, 0)
-WARN = lcd_rp2040lcd096.rgb(192, 128, 0)
-
-WIDTH = 20
-HEIGHT = 8
-LINE_HEIGHT = 10
-LINE_OFFSET_Y = 1
-
 _screen = None
 _buffer = []
 
-def init(screen):
-    global _screen
-    _screen = screen
-    _screen.fill(lcd_rp2040lcd096.BLACK)
+def init(device):
+    global _screen, DEVICE, NORMAL, ERROR, WARN, BLACK
+    DEVICE = device
+    NORMAL = DEVICE.rgb(192, 192, 192)
+    ERROR = DEVICE.rgb(192, 0, 0)
+    WARN = DEVICE.rgb(192, 128, 0)
+    BLACK = DEVICE.rgb(0, 0, 0)
+
+    _screen = device.Screen()
+    _screen.fill(BLACK)
     _screen.display()
     
 def log(text):
@@ -35,20 +30,27 @@ def _append(text, colour):
     if not isinstance(text, str):
         text = str(text)
 
-    text = text[:20]
+    while True:
+        overflow = text[DEVICE.WIDTH:]
+        text = text[:DEVICE.WIDTH]
 
-    if (len(_buffer) == HEIGHT):
-        _buffer = _buffer[1:]
-        
-    _buffer.append((colour, text))
+        if (len(_buffer) == DEVICE.HEIGHT):
+            _buffer = _buffer[1:]
+            
+        _buffer.append((colour, text))
+
+        if not overflow:
+            break
+        text = overflow
+
     _render()
     
 def _render():
-    y = LINE_OFFSET_Y
+    y = DEVICE.LINE_OFFSET_Y
 
-    _screen.fill(lcd_rp2040lcd096.BLACK)
+    _screen.fill(BLACK)
     for line in _buffer:
         _screen.text(line[1], 0, y, line[0])
-        y += LINE_HEIGHT
+        y += DEVICE.LINE_HEIGHT
         
     _screen.display()

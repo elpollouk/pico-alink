@@ -1,13 +1,19 @@
-from sys import stdin
+from sys import stdin, implementation
+# pyright: reportMissingImports=false
+
 import config
 import log
 import memlog
 
-if config.MICROPYTHON:
+log.log("Starting...")
+
+IS_MICROPYTHON = implementation.name == "micropython"
+
+if IS_MICROPYTHON:
+    log.log("Micropython detected")
     import micropython
     micropython.kbd_intr(-1)
 
-log.log("Starting...")
 log.log("~ for debug mode")
 
 def com_read(length=1):
@@ -34,8 +40,10 @@ class Terminated(Exception):
 def pingHandler():
     data = com_read(2)
     if data[0] == 0x24:
+        log.log("Ping request")
         com_write([0x62, 0x22, 0x40, 0x00])
     elif data[0] == 0x21:
+        log.log("Version request")
         com_write([0x63, 0x21, 0x6B, 0x01, 0x28])
 
 def debugHandler():
@@ -79,8 +87,9 @@ except Terminated:
     pass
 
 finally:
-    if config.MICROPYTHON:
+    if IS_MICROPYTHON:
         # Restore CTRL+C for Micropython environments
+        log.log("Enabling Micropython keyboard interrupt")
         micropython.kbd_intr(3)
 
 log.log("aLink shutdown")

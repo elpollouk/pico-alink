@@ -7,7 +7,7 @@ _loggers = [
 
 if config.LCD_LOGGER:
     import lcdlog
-    lcdlog.init(config.LCD_LOGGER.Screen())
+    lcdlog.init(config.LCD_LOGGER)
     _loggers.append(lcdlog)
 
 

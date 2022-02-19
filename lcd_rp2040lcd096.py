@@ -2,6 +2,11 @@ from machine import Pin,SPI,PWM
 import framebuf
 import time
 
+WIDTH = 20
+HEIGHT = 8
+LINE_HEIGHT = 10
+LINE_OFFSET_Y = 1
+
 # Colour is RGB little-endian
 RED = 0x00F8
 GREEN = 0xE007
