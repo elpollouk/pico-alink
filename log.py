@@ -1,54 +1,25 @@
-import lcd
+import config
+import memlog
 
-NORMAL = lcd.rgb(192, 192, 192)
-ERROR = lcd.rgb(192, 0, 0)
-WARN = lcd.rgb(192, 128, 0)
+_loggers = [
+    memlog
+]
 
-WIDTH = 20
-HEIGHT = 8
-LINE_HEIGHT = 10
-LINE_OFFSET_Y = 1
+if config.LCD_LOGGER:
+    import lcdlog
+    lcdlog.init(config.LCD_LOGGER.Screen())
+    _loggers.append(lcdlog)
 
-_screen = None
-_buffer = []
 
-def init(screen):
-    global _screen
-    _screen = screen
-    _screen.fill(lcd.BLACK)
-    _screen.display()
-    
 def log(text):
-    _append(text, NORMAL)
+    _apply("log", text)
     
 def warn(text):
-    _append(text, WARN)
+    _apply("warn", text)
     
 def error(text):
-    _append(text, ERROR)
-    
-def _append(text, colour):
-    global _buffer
-    if _screen is None:
-        return
+    _apply("error", text)
 
-    if not isinstance(text, str):
-        text = str(text)
-
-    text = text[:20]
-
-    if (len(_buffer) == HEIGHT):
-        _buffer = _buffer[1:]
-        
-    _buffer.append((colour, text))
-    _render()
-    
-def _render():
-    y = LINE_OFFSET_Y
-
-    _screen.fill(lcd.BLACK)
-    for line in _buffer:
-        _screen.text(line[1], 0, y, line[0])
-        y += LINE_HEIGHT
-        
-    _screen.display()
+def _apply(method, text):
+    for logger in _loggers:
+        getattr(logger, method)(text)

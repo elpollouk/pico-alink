@@ -1,11 +1,11 @@
 from sys import stdin
-import lcd
+import config
 import log
+import memlog
 
-ENABLE_LCD = True
-
-if ENABLE_LCD:
-    log.init(lcd.Screen())
+if config.MICROPYTHON:
+    import micropython
+    micropython.kbd_intr(-1)
 
 log.log("Starting...")
 log.log("~ for debug mode")
@@ -39,21 +39,30 @@ def pingHandler():
         com_write([0x63, 0x21, 0x6B, 0x01, 0x28])
 
 def debugHandler():
-    print("Debug Menu:")
-    print("  0) Return to aLink mode")
-    print("  x) Exit script")
-    print("")
-
     while True:
-        c = stdin.read(1)
-        if c == '0':
-            print("Returning to aLink mode")
-            return
-        elif c == 'x':
-            raise Terminated()
+        print("Debug Menu:")
+        print("  0) Return to aLink mode")
+        print("  1) View log")
+        print("  x) Exit script")
+        print("")
+
+        while True:
+            c = stdin.read(1)
+            if c == '0':
+                print("Returning to aLink mode")
+                return
+
+            elif c == '1':
+                memlog.output(print)
+                print("")
+                break
+
+            elif c == 'x':
+                print("Exit requested")
+                raise Terminated()
 
 def unrecognisedHandler():
-    pass
+    log.warn("Unrecognised sequence")
 
 ROOT_HANDLERS = {
     0x21: pingHandler,
@@ -68,5 +77,10 @@ try:
 
 except Terminated:
     pass
+
+finally:
+    if config.MICROPYTHON:
+        # Restore CTRL+C for Micropython environments
+        micropython.kbd_intr(3)
 
 log.log("aLink shutdown")
