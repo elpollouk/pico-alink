@@ -1,25 +1,21 @@
-from sys import stdin, implementation
 # pyright: reportMissingImports=false
-
+from sys import stdin, implementation
 import config
 import log
 import memlog
 
-log.log("Starting...")
-
 IS_MICROPYTHON = implementation.name == "micropython"
 
-if IS_MICROPYTHON:
-    log.log("Micropython detected")
-    import micropython
-    micropython.kbd_intr(-1)
-
-log.log("~ for debug mode")
+def checksum(data):
+    checkSum = 0
+    for v in data:
+        checkSum ^= v
+    return checkSum & 0xFF
 
 def com_read(length=1):
     data = stdin.read(length)
     if (isinstance(data, str)):
-        data = [ord(d) for d in data] #type: ignore
+        data = [ord(d) for d in data]
     return data
 
 def com_write(data):
@@ -33,20 +29,22 @@ def com_write(data):
 
     print(data, end='')
 
+def com_write_with_checksum(data):
+    com_write(data)
+    com_write(checksum(data))
 
 class Terminated(Exception):
     pass
 
-def pingHandler():
-    data = com_read(2)
-    if data[0] == 0x24:
-        log.log("Ping request")
-        com_write([0x62, 0x22, 0x40, 0x00])
-    elif data[0] == 0x21:
-        log.log("Version request")
-        com_write([0x63, 0x21, 0x6B, 0x01, 0x28])
+def pingHandler(buffer):
+    log.log("Ping request")
+    com_write_with_checksum([0x62, 0x22, 0x40])
 
-def debugHandler():
+def versionHandler(buffer):
+    log.log("Version request")
+    com_write_with_checksum([0x63, 0x21, config.DEVICE_VERSION, 0x01])
+
+def debugHandler(buffer):
     while True:
         print("Debug Menu:")
         print("  0) Return to aLink mode")
@@ -69,19 +67,62 @@ def debugHandler():
                 print("Exit requested")
                 raise Terminated()
 
-def unrecognisedHandler():
-    log.warn("Unrecognised sequence")
+def unrecognisedHandler(buffer):
+    log.warn("Unrecognised request")
+    sequence = " ".join([hex(v) for v in buffer])
+    log.warn(sequence)
 
-ROOT_HANDLERS = {
-    0x21: pingHandler,
-    ord('~'): debugHandler
-}
+
+def add_to_trie(node, handler):
+    sequence = handler[0]
+    handler = handler[1]
+    for b in sequence[:-1]:
+        n = node.get(b)
+        if not n:
+            n = {}
+            node[b] = n
+        node = n
+
+    node[sequence[-1]] = handler
+
+def build_handler_trie():
+    root = {}
+    for handler in ROOT_HANDLERS:
+        add_to_trie(root, handler)
+
+    return root
+
+ROOT_HANDLERS = [
+    ((0x21, 0x21, 0x00), versionHandler),
+    ((0x21, 0x24, 0x05), pingHandler),
+    ((ord('~'),), debugHandler)
+]
+
+
+
+log.log("alink v0.1")
+log.log("Starting...")
+
+if IS_MICROPYTHON:
+    log.log("Micropython detected")
+    import micropython
+    micropython.kbd_intr(-1)
+
+ROOT_HANDLERS = build_handler_trie()
+
+log.log("~ for debug mode")
 
 try:
     while True:
-        c = com_read()
-        handler = ROOT_HANDLERS.get(c[0]) or unrecognisedHandler
-        handler()
+        node = ROOT_HANDLERS
+        buffer = []
+        while True:
+            c = com_read()[0]
+            buffer.append(c)
+            node = node.get(c, unrecognisedHandler)
+            if callable(node):
+                node(buffer)
+                break
 
 except Terminated:
     pass

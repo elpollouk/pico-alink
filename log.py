@@ -10,6 +10,17 @@ if config.LCD_LOGGER:
     lcdlog.init(config.LCD_LOGGER)
     _loggers.append(lcdlog)
 
+if config.STDOUT_LOGGER:
+    class StdoutLogger:
+        def log(self, text):
+            print(f"INFO: {text}")
+        def warn(self, text):
+            print(f"WARN: {text}")
+        def error(self, text):
+            print(f"ERROR: {text}")
+
+    _loggers.append(StdoutLogger())
+
 
 def log(text):
     _apply("log", text)
