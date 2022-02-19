@@ -35,16 +35,32 @@ def build_handler_trie():
 ###################################################################################################
 
 def unrecognisedHandler(buffer):
-    sequence = " ".join([hex(v) for v in buffer])
+    sequence = com.to_hex(buffer)
     log.warn(sequence)
 
-def pingHandler(buffer):
+def pingHandler(_):
     log.log("Ping request")
     com.write_with_checksum([0x62, 0x22, 0x40])
 
-def versionHandler(buffer):
+def versionHandler(_):
     log.log("Version request")
     com.write_with_checksum([0x63, 0x21, config.DEVICE_VERSION, 0x01])
+
+def locoSpeedHandler(buffer):
+    loco = com.read_into_buffer(buffer, 2)
+    speed = com.read_into_buffer(buffer, 1)[0]
+    checksum = com.read_byte()
+    if not com.validate_message(buffer, checksum):
+        return
+
+    loco = com.decode_loco_id(loco)
+    forward = speed & 0x80 == 0x80
+    speed = speed & 0x7f
+
+    log.log("Loco speed request")
+    log.log(f"  Loco: {loco}")
+    log.log(f"  Speed: {speed}")
+    log.log(f"  Forward: {forward}")
 
 def debugHandler(buffer):
     while True:
@@ -76,7 +92,7 @@ def debugHandler(buffer):
 
             elif c == '3':
                 print("Throwing exception...")
-                raise NameError("Test Exception")
+                raise AssertionError("Test Exception")
 
             elif c == 'x':
                 print("Exit requested")
@@ -86,6 +102,7 @@ def debugHandler(buffer):
 ROOT_HANDLERS = [
     ((0x21, 0x21, 0x00), versionHandler),
     ((0x21, 0x24, 0x05), pingHandler),
+    ((0xE4, 0x13), locoSpeedHandler),
     ((ord('~'),), debugHandler)
 ]
 
@@ -122,12 +139,19 @@ except Terminated:
     pass
 
 except Exception as ex:
-    log.error(f"{type(ex).__name__}: {ex}")
+    if IS_MICROPYTHON:
+        from debug import ExceptionParser
+        parser = ExceptionParser(ex)
+        log.error(parser.details)
+        log.error(f"  {parser.function}()")
+        log.error(f"  {parser.location}")
+    else:
+        log.error(f"{type(ex).__name__}: {ex}")
+        
 
 finally:
     if IS_MICROPYTHON:
         # Restore CTRL+C for Micropython environments
-        log.log("Enabling Micropython keyboard interrupt")
         micropython.kbd_intr(3)
 
 log.log("aLink shutdown")

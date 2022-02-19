@@ -23,6 +23,7 @@ def _append(level, text):
         _size -= len(old[1])
 
     _buffer.append((level, text))
+    _size += len(text)
 
 def output(out):
     for level, text in _buffer:
