@@ -32,5 +32,8 @@ def error(text):
     _apply("error", text)
 
 def _apply(method, text):
+    if not isinstance(text, str):
+        text = str(text)
+
     for logger in _loggers:
         getattr(logger, method)(text)

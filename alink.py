@@ -13,7 +13,7 @@ def checksum(data):
     return checkSum & 0xFF
 
 def com_read(length=1):
-    data = stdin.read(length)
+    data = stdin.buffer.read(length)
     if (isinstance(data, str)):
         data = [ord(d) for d in data]
     return data
@@ -46,9 +46,12 @@ def versionHandler(buffer):
 
 def debugHandler(buffer):
     while True:
+        print("")
         print("Debug Menu:")
         print("  0) Return to aLink mode")
         print("  1) View log")
+        print("  2) Memory info")
+        print("  3) Trigger exception")
         print("  x) Exit script")
         print("")
 
@@ -60,8 +63,18 @@ def debugHandler(buffer):
 
             elif c == '1':
                 memlog.output(print)
-                print("")
                 break
+
+            elif c == '2':
+                if IS_MICROPYTHON:
+                    micropython.mem_info()
+                else:
+                    print("Unavailable")
+                break
+
+            elif c == '3':
+                print("Throwing exception...")
+                raise NameError("Test Exception")
 
             elif c == 'x':
                 print("Exit requested")
@@ -126,6 +139,9 @@ try:
 
 except Terminated:
     pass
+
+except Exception as ex:
+    log.error(f"{type(ex).__name__}: {ex}")
 
 finally:
     if IS_MICROPYTHON:
