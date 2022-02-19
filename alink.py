@@ -1,48 +1,50 @@
 # pyright: reportMissingImports=false
 from sys import stdin, implementation
+import com
 import config
 import log
 import memlog
 
 IS_MICROPYTHON = implementation.name == "micropython"
 
-def checksum(data):
-    checkSum = 0
-    for v in data:
-        checkSum ^= v
-    return checkSum & 0xFF
-
-def com_read(length=1):
-    data = stdin.buffer.read(length)
-    if (isinstance(data, str)):
-        data = [ord(d) for d in data]
-    return data
-
-def com_write(data):
-    if isinstance(data, (list, tuple)):
-        for d in data:
-            com_write(d)
-        return
-
-    if isinstance(data, int):
-        data = chr(data)
-
-    print(data, end='')
-
-def com_write_with_checksum(data):
-    com_write(data)
-    com_write(checksum(data))
-
 class Terminated(Exception):
     pass
 
+def add_to_trie(node, handler):
+    sequence = handler[0]
+    handler = handler[1]
+    for b in sequence[:-1]:
+        n = node.get(b)
+        if not n:
+            n = {}
+            node[b] = n
+        node = n
+
+    node[sequence[-1]] = handler
+
+def build_handler_trie():
+    root = {}
+    for handler in ROOT_HANDLERS:
+        add_to_trie(root, handler)
+
+    return root
+
+
+###################################################################################################
+# Handlers
+###################################################################################################
+
+def unrecognisedHandler(buffer):
+    sequence = " ".join([hex(v) for v in buffer])
+    log.warn(sequence)
+
 def pingHandler(buffer):
     log.log("Ping request")
-    com_write_with_checksum([0x62, 0x22, 0x40])
+    com.write_with_checksum([0x62, 0x22, 0x40])
 
 def versionHandler(buffer):
     log.log("Version request")
-    com_write_with_checksum([0x63, 0x21, config.DEVICE_VERSION, 0x01])
+    com.write_with_checksum([0x63, 0x21, config.DEVICE_VERSION, 0x01])
 
 def debugHandler(buffer):
     while True:
@@ -80,30 +82,6 @@ def debugHandler(buffer):
                 print("Exit requested")
                 raise Terminated()
 
-def unrecognisedHandler(buffer):
-    log.warn("Unrecognised request")
-    sequence = " ".join([hex(v) for v in buffer])
-    log.warn(sequence)
-
-
-def add_to_trie(node, handler):
-    sequence = handler[0]
-    handler = handler[1]
-    for b in sequence[:-1]:
-        n = node.get(b)
-        if not n:
-            n = {}
-            node[b] = n
-        node = n
-
-    node[sequence[-1]] = handler
-
-def build_handler_trie():
-    root = {}
-    for handler in ROOT_HANDLERS:
-        add_to_trie(root, handler)
-
-    return root
 
 ROOT_HANDLERS = [
     ((0x21, 0x21, 0x00), versionHandler),
@@ -112,6 +90,9 @@ ROOT_HANDLERS = [
 ]
 
 
+###################################################################################################
+# Main script
+###################################################################################################
 
 log.log("alink v0.1")
 log.log("Starting...")
@@ -130,7 +111,7 @@ try:
         node = ROOT_HANDLERS
         buffer = []
         while True:
-            c = com_read()[0]
+            c = com.read_byte()
             buffer.append(c)
             node = node.get(c, unrecognisedHandler)
             if callable(node):
