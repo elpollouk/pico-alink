@@ -5,6 +5,7 @@ import config
 import log
 import memlog
 
+
 IS_MICROPYTHON = implementation.name == "micropython"
 
 class Terminated(Exception):
@@ -98,6 +99,38 @@ def locoFunctionHandler(buffer):
         log.log(" " + " ".join(buffer))
 
 
+current_cv = 0
+cvs = [0] * 256
+cvs[1] = 3
+cvs[3] = 5
+cvs[4] = 5
+cvs[7] = 100
+cvs[8] = 255
+cvs[10] = 128
+cvs[29] = 6
+
+
+def cvSelectHandler(buffer):
+    global current_cv
+    cv = com.read_into_buffer(buffer, 1)[0]
+    checksum = com.read_byte()
+    if not com.validate_message(buffer, checksum):
+        return
+
+    log.log(f"Selected CV {cv}")
+    current_cv = cv
+
+    com.write_with_checksum((0x61, 0x02))
+    com.write_with_checksum((0x61, 0x02))
+    com.write_with_checksum((0x61, 0x01))
+    com.write_with_checksum((0x61, 0x01))
+
+
+def cvReadHandler(_):
+    log.log(f"Reading CV {current_cv}")
+    log.log(f" Value: {cvs[current_cv]}")
+    com.write_with_checksum((0x63, 0x14, current_cv, cvs[current_cv]))
+
 
 def debugHandler(buffer):
     while True:
@@ -137,8 +170,10 @@ def debugHandler(buffer):
 
 
 ROOT_HANDLERS = [
+    ((0x21, 0x10, 0x31), cvReadHandler),
     ((0x21, 0x21, 0x00), versionHandler),
     ((0x21, 0x24, 0x05), pingHandler),
+    ((0x22, 0x15), cvSelectHandler),
     ((0xE4, 0x13), locoSpeedHandler),
     ((0xE4, 0x20), locoFunctionHandler),
     ((0xE4, 0x21), locoFunctionHandler),

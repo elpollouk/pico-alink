@@ -1,4 +1,4 @@
-from sys import stdin
+from sys import stdin, stdout
 import log
 
 def to_hex(buffer):
@@ -40,15 +40,10 @@ def read_into_buffer(buffer, length=1):
     return data
 
 def write(data):
-    if isinstance(data, (list, tuple)):
-        for d in data:
-            write(d)
-        return
-
     if isinstance(data, int):
-        data = chr(data)
-
-    print(data, end='')
+        data = [data]
+    data = bytes(data)
+    stdout.buffer.write(data)
 
 def write_with_checksum(data):
     write(data)
