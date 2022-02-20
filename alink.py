@@ -2,6 +2,7 @@
 from sys import stdin, implementation
 import com
 import config
+from debug import Terminated, IS_MICROPYTHON, inc_stat, open_debug_menu
 import log
 import memlog
 import os
@@ -9,9 +10,6 @@ import time
 
 
 VERSION = "v0.2"
-IS_MICROPYTHON = implementation.name == "micropython"
-BOOT_TIME = time.time()
-STATS = {}
 
 # Loco function bit mapping by bank
 FUNCTIONS = {
@@ -34,9 +32,6 @@ cvs[10] = 128
 cvs[29] = 6
 
 
-class Terminated(Exception):
-    pass
-
 def add_to_trie(node, handler):
     sequence = handler[0]
     handler = handler[1]
@@ -55,10 +50,6 @@ def build_handler_trie():
         add_to_trie(root, handler)
 
     return root
-
-def inc_stat(stat):
-    v = STATS.get(stat, 0) + 1
-    STATS[stat] = v
 
 def binary_mode(enabled):
     if IS_MICROPYTHON:
@@ -176,65 +167,7 @@ def cvWriteHandler(buffer):
 def debugHandler(_):
     binary_mode(False)
     try:
-        while True:
-            print("")
-            print("Debug Menu:")
-            print("  0) Return to aLink mode")
-            print("  1) View log")
-            print("  2) Stats")
-            print("  3) Memory info")
-            print("  4) Trigger exception")
-            print("  5) Delete boot.py")
-            print("  x) Exit script")
-            print("")
-
-            while True:
-                c = stdin.read(1)
-                if c == '0':
-                    print("Returning to aLink mode")
-                    return
-
-                elif c == '1':
-                    memlog.output(print)
-                    break
-
-                elif c == '2':
-                    ss = int(time.time() - BOOT_TIME)
-                    mm = int(ss / 60)
-                    ss -= (mm * 60)
-                    print(f"Uptime: {mm:02d}:{ss:02d}")
-                    for k, v in STATS.items():
-                        print(f"{k}: {v}")
-                    break
-
-                elif c == '3':
-                    if IS_MICROPYTHON:
-                        import micropython
-                        micropython.mem_info()
-                    else:
-                        print("Unavailable")
-                    break
-
-                elif c == '4':
-                    print("Throwing exception...")
-                    raise AssertionError("Test Exception")
-
-                elif c == '5':
-                    if not IS_MICROPYTHON:
-                        print("Unavailable")
-                        break
-                    
-                    try:
-                        os.stat("boot.py")
-                        print("Removing boot.py")
-                        os.remove("boot.py")
-                    except OSError:
-                        print("boot.py not found")
-                    break
-
-                elif c == 'x':
-                    print("Exit requested")
-                    raise Terminated()
+        open_debug_menu()
 
     finally:
         binary_mode(True)

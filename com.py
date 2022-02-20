@@ -1,4 +1,5 @@
 from sys import stdin, stdout
+from debug import add_stat
 import log
 
 def to_hex(buffer):
@@ -29,6 +30,8 @@ def read(length=1):
     data = stdin.buffer.read(length)
     if (isinstance(data, str)):
         data = [ord(d) for d in data]
+
+    add_stat("Read", len(data))
     return data
 
 def read_byte():
@@ -44,6 +47,7 @@ def write(data):
         data = [data]
     data = bytes(data)
     stdout.buffer.write(data)
+    add_stat("Written", len(data))
 
 def write_with_checksum(data):
     write(data)
