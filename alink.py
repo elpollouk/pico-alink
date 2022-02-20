@@ -1,8 +1,9 @@
 # pyright: reportMissingImports=false
 from sys import stdin, implementation
+from debug import Terminated, IS_MICROPYTHON, inc_stat
 import com
 import config
-from debug import Terminated, IS_MICROPYTHON, inc_stat, open_debug_menu
+import debug
 import log
 import memlog
 import os
@@ -17,7 +18,13 @@ FUNCTIONS = {
     0x21: (5, 6, 7, 8),
     0x22: (9, 10, 11, 12),
     0x23: (13, 14, 15, 16, 17, 18, 19, 20),
-    0x28: (21, 22, 23, 24, 25, 26, 27, 27)
+    0x28: (21, 22, 23, 24, 25, 26, 27, 28)
+}
+
+DEBUG_FUNCTIONS = {
+    0: debug.view_stats,
+    27: debug.delete_bootpy,
+    28: debug.exit_script
 }
 
 # CV data store
@@ -94,6 +101,18 @@ def locoSpeedHandler(buffer):
     log.log(f" Forward: {forward}")
 
 
+def debugFunctionHandler(bank, state):
+    bit = 1
+
+    for f in FUNCTIONS[bank]:
+        if state & bit:
+            action = DEBUG_FUNCTIONS.get(f, lambda: None)
+            action(log.log)
+            return
+
+        bit <<= 1
+
+
 def locoFunctionHandler(buffer):
     bank = buffer[-1]
     loco = com.read_into_buffer(buffer, 2)
@@ -104,19 +123,25 @@ def locoFunctionHandler(buffer):
 
     loco = com.decode_loco_id(loco)
 
+    if loco == config.DEBUG_LOCO:
+        debugFunctionHandler(bank, state)
+        return
+
     log.log("Loco func request")
     log.log(f" Loco: {loco}")
 
     buffer = []
     bit = 1
+
     for f in FUNCTIONS[bank]:
         f = f"F{f}"
         f += "+" if state & bit != 0 else "-"
         buffer.append(f)
-        bit <<= 1
         if len(buffer) == 4:
             log.log(" " + " ".join(buffer))
             buffer = []
+
+        bit <<= 1
 
     if buffer:
         log.log(" " + " ".join(buffer))
@@ -167,7 +192,7 @@ def cvWriteHandler(buffer):
 def debugHandler(_):
     binary_mode(False)
     try:
-        open_debug_menu()
+        debug.open_debug_menu()
 
     finally:
         binary_mode(True)

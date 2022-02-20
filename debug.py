@@ -65,41 +65,41 @@ def add_stat(stat, value):
 # Debug Menu
 ###################################################################################################
 
-def return_to_alink():
-    print("Returning to aLink mode")
+def return_to_alink(out):
+    out("Returning to aLink mode")
     return True
 
-def view_log():
+def view_log(out):
     import memlog
-    memlog.output(print)
+    memlog.output(out)
 
-def view_stats():
+def view_stats(out):
     ss = int(time.time() - BOOT_TIME)
     mm = int(ss / 60)
     ss -= (mm * 60)
-    print(f"Uptime: {mm:02d}:{ss:02d}")
+    out(f"Uptime: {mm:02d}:{ss:02d}")
     for k, v in STATS.items():
-        print(f"{k}: {v}")
+        out(f"{k}: {v}")
 
-def mem_info():
+def mem_info(_):
     import micropython
     micropython.mem_info()
 
-def raise_exception():
-    print("Throwing exception...")
+def raise_exception(out):
+    out("Throwing exception...")
     raise AssertionError("Test Exception")
 
-def delete_bootpy():
+def delete_bootpy(out):
     try:
         import os
         os.stat("boot.py")
-        print("Removing boot.py")
+        out("Removing boot.py")
         os.remove("boot.py")
     except OSError:
-        print("boot.py not found")
+        out("boot.py not found")
 
-def exit_script():
-    print("Exit requested")
+def exit_script(out):
+    out("Exit requested")
     raise Terminated()
 
 def should_display(item):
@@ -120,7 +120,7 @@ def open_debug_menu():
             if action is None:
                 continue
 
-            if action():
+            if action(print):
                 return
             break
 
