@@ -58,9 +58,46 @@ def locoSpeedHandler(buffer):
     speed = speed & 0x7f
 
     log.log("Loco speed request")
-    log.log(f"  Loco: {loco}")
-    log.log(f"  Speed: {speed}")
-    log.log(f"  Forward: {forward}")
+    log.log(f" Loco: {loco}")
+    log.log(f" Speed: {speed}")
+    log.log(f" Forward: {forward}")
+
+FUNCTIONS = {
+    0x20: (1, 2, 3, 4, 0),
+    0x21: (5, 6, 7, 8),
+    0x22: (9, 10, 11, 12),
+    0x23: (13, 14, 15, 16, 17, 18, 19, 20),
+    0x28: (21, 22, 23, 24, 25, 26, 27, 27)
+}
+
+def locoFunctionHandler(buffer):
+    bank = buffer[-1]
+    loco = com.read_into_buffer(buffer, 2)
+    state = com.read_into_buffer(buffer, 1)[0]
+    checksum = com.read_byte()
+    if not com.validate_message(buffer, checksum):
+        return
+
+    loco = com.decode_loco_id(loco)
+
+    log.log("Loco func request")
+    log.log(f" Loco: {loco}")
+
+    buffer = []
+    bit = 1
+    for f in FUNCTIONS[bank]:
+        f = f"F{f}"
+        f += "+" if state & bit != 0 else "-"
+        buffer.append(f)
+        bit <<= 1
+        if len(buffer) == 4:
+            log.log(" " + " ".join(buffer))
+            buffer = []
+
+    if buffer:
+        log.log(" " + " ".join(buffer))
+
+
 
 def debugHandler(buffer):
     while True:
@@ -103,6 +140,11 @@ ROOT_HANDLERS = [
     ((0x21, 0x21, 0x00), versionHandler),
     ((0x21, 0x24, 0x05), pingHandler),
     ((0xE4, 0x13), locoSpeedHandler),
+    ((0xE4, 0x20), locoFunctionHandler),
+    ((0xE4, 0x21), locoFunctionHandler),
+    ((0xE4, 0x22), locoFunctionHandler),
+    ((0xE4, 0x23), locoFunctionHandler),
+    ((0xE4, 0x28), locoFunctionHandler),
     ((ord('~'),), debugHandler)
 ]
 
