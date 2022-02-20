@@ -132,6 +132,26 @@ def cvReadHandler(_):
     com.write_with_checksum((0x63, 0x14, current_cv, cvs[current_cv]))
 
 
+def cvWriteHandler(buffer):
+    global current_cv
+    cv = com.read_into_buffer(buffer, 1)[0]
+    value = com.read_into_buffer(buffer, 1)[0]
+    checksum = com.read_byte()
+    if not com.validate_message(buffer, checksum):
+        return
+
+    log.log(f"Writing CV {cv}")
+    log.log(f" Value: {value}")
+
+    current_cv = cv
+    cvs[cv] = value
+
+    com.write_with_checksum((0x61, 0x02))
+    com.write_with_checksum((0x61, 0x02))
+    com.write_with_checksum((0x61, 0x01))
+    com.write_with_checksum((0x61, 0x01))
+
+
 def debugHandler(buffer):
     while True:
         print("")
@@ -174,6 +194,7 @@ ROOT_HANDLERS = [
     ((0x21, 0x21, 0x00), versionHandler),
     ((0x21, 0x24, 0x05), pingHandler),
     ((0x22, 0x15), cvSelectHandler),
+    ((0x23, 0x16), cvWriteHandler),
     ((0xE4, 0x13), locoSpeedHandler),
     ((0xE4, 0x20), locoFunctionHandler),
     ((0xE4, 0x21), locoFunctionHandler),
