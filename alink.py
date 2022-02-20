@@ -4,9 +4,12 @@ import com
 import config
 import log
 import memlog
+import time
 
 
 IS_MICROPYTHON = implementation.name == "micropython"
+BOOT_TIME = time.time()
+STATS = {}
 
 # Loco function bit mapping by bank
 FUNCTIONS = {
@@ -51,6 +54,9 @@ def build_handler_trie():
 
     return root
 
+def incStat(stat):
+    v = STATS.get(stat, 0) + 1
+    STATS[stat] = v
 
 ###################################################################################################
 # Handlers
@@ -164,8 +170,9 @@ def debugHandler(buffer):
         print("Debug Menu:")
         print("  0) Return to aLink mode")
         print("  1) View log")
-        print("  2) Memory info")
-        print("  3) Trigger exception")
+        print("  2) Stats")
+        print("  3) Memory info")
+        print("  4) Trigger exception")
         print("  x) Exit script")
         print("")
 
@@ -180,13 +187,22 @@ def debugHandler(buffer):
                 break
 
             elif c == '2':
+                ss = int(time.time() - BOOT_TIME)
+                mm = int(ss / 60)
+                ss -= (mm * 60)
+                print(f"Uptime: {mm:02d}:{ss:02d}")
+                for k, v in STATS.items():
+                    print(f"{k}: {v}")
+                break
+
+            elif c == '3':
                 if IS_MICROPYTHON:
                     micropython.mem_info()
                 else:
                     print("Unavailable")
                 break
 
-            elif c == '3':
+            elif c == '4':
                 print("Throwing exception...")
                 raise AssertionError("Test Exception")
 
@@ -238,12 +254,17 @@ try:
                 node = node.get(c, unrecognisedHandler)
                 if callable(node):
                     node(buffer)
+                    if node == unrecognisedHandler:
+                        incStat("Unhandled messages")
+                    else:
+                        incStat("Handled messages")
                     break
 
         except Terminated:
             break
 
         except Exception as ex:
+            incStat("Exceptions")
             if IS_MICROPYTHON:
                 from debug import ExceptionParser
                 parser = ExceptionParser(ex)
