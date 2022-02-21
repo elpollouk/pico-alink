@@ -1,0 +1,2 @@
+import alink
+alink.main()

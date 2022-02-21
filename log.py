@@ -12,7 +12,7 @@ if config.LCD_LOGGER:
 
 if config.STDOUT_LOGGER:
     class StdoutLogger:
-        def log(self, text):
+        def info(self, text):
             print(f"INFO: {text}")
         def warn(self, text):
             print(f"WARN: {text}")
@@ -22,12 +22,12 @@ if config.STDOUT_LOGGER:
     _loggers.append(StdoutLogger())
 
 
-def log(text):
-    _apply("log", text)
-    
+def info(text):
+    _apply("info", text)
+
 def warn(text):
     _apply("warn", text)
-    
+
 def error(text):
     _apply("error", text)
 

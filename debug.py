@@ -12,7 +12,11 @@ STATS = {}
 class Terminated(Exception):
     pass
 
-class ExceptionParser(io.IOBase):
+
+###################################################################################################
+# Parser for exceptions formatted by Micropython's sys.print_exception()
+###################################################################################################
+class ParseException(io.IOBase):
     def __init__(self, ex):
         self.ex = ex
         self.type = type(ex).__name__
@@ -22,14 +26,14 @@ class ExceptionParser(io.IOBase):
         self.function = ""
         self._buffer = ""
         sys.print_exception(ex, self)
-        
+
     def _on_line(self):
         match = STACK_DETAILS.search(self._buffer)
         if match:
             self.file = match.group(1)
             self.line = match.group(2)
             self.function = match.group(3)
-        
+
     def write(self, data):
         data = data.decode()
         for i in range(len(data)):
@@ -40,10 +44,6 @@ class ExceptionParser(io.IOBase):
             else:
                 self._buffer += c
 
-    @property
-    def details(self):
-        return f"{self.type}: {self.message}"
-    
     @property
     def location(self):
         return f"{self.file}:{self.line}"
@@ -89,14 +89,14 @@ def raise_exception(out):
     out("Throwing exception...")
     raise AssertionError("Test Exception")
 
-def delete_bootpy(out):
+def delete_mainpy(out):
     try:
         import os
-        os.stat("boot.py")
-        out("Removing boot.py")
-        os.remove("boot.py")
+        os.stat("main.py")
+        out("Removing main.py")
+        os.remove("main.py")
     except OSError:
-        out("boot.py not found")
+        out("main.py not found")
 
 def exit_script(out):
     out("Exit requested")
@@ -122,6 +122,7 @@ def open_debug_menu():
 
             if action(print):
                 return
+
             break
 
 ALL = object()
@@ -133,7 +134,7 @@ DEBUG_MENU_ITEMS = [
     ("2", "Stats", view_stats, ALL),
     ("3", "Memory info", mem_info, MICROPYTHON),
     ("4", "Trigger exception", raise_exception, ALL),
-    ("5", "Delete boot.py", delete_bootpy, MICROPYTHON),
+    ("5", "Delete main.py", delete_mainpy, MICROPYTHON),
     ("x", "Exit script", exit_script, ALL)
 ]
 

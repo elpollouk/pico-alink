@@ -17,7 +17,7 @@ def calc_checksum(data):
         checkSum ^= v
     return checkSum & 0xFF
 
-def validate_message(buffer, checksum):
+def is_valid_message(buffer, checksum):
     if checksum == calc_checksum(buffer):
         return True
 
@@ -26,7 +26,7 @@ def validate_message(buffer, checksum):
 
     return False
 
-def read(length=1):
+def read(length):
     data = stdin.buffer.read(length)
     if (isinstance(data, str)):
         data = [ord(d) for d in data]

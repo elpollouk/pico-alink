@@ -7,12 +7,12 @@ ERROR = "ERROR"
 _buffer = []
 _size = 0
 
-def log(text):
+def info(text):
     _append(INFO, text)
-    
+
 def warn(text):
     _append(WARN, text)
-    
+
 def error(text):
     _append(ERROR, text)
 

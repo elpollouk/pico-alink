@@ -2,9 +2,9 @@ _screen = None
 _buffer = []
 
 def init(device):
-    global _screen, DEVICE, NORMAL, ERROR, WARN, BLACK
+    global _screen, DEVICE, INFO, ERROR, WARN, BLACK
     DEVICE = device
-    NORMAL = DEVICE.rgb(192, 192, 192)
+    INFO = DEVICE.rgb(192, 192, 192)
     ERROR = DEVICE.rgb(192, 0, 0)
     WARN = DEVICE.rgb(192, 128, 0)
     BLACK = DEVICE.rgb(0, 0, 0)
@@ -12,16 +12,16 @@ def init(device):
     _screen = device.Screen()
     _screen.fill(BLACK)
     _screen.display()
-    
-def log(text):
-    _append(text, NORMAL)
-    
+
+def info(text):
+    _append(text, INFO)
+
 def warn(text):
     _append(text, WARN)
-    
+
 def error(text):
     _append(text, ERROR)
-    
+
 def _append(text, colour):
     global _buffer
     if _screen is None:

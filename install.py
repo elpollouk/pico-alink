@@ -1,5 +1,25 @@
-
 import os
+from sys import stderr
+
+CONFIG = """MEM_LOG_SIZE = 500
+LCD_LOGGER = None
+STDOUT_LOGGER = False
+LOG_PING = False
+DEVICE_VERSION = 107
+DEBUG_LOCO = 9999
+"""
+
+FILES = [
+    "alink.py",
+    "main.py",
+    "com.py",
+    ("pico_config.py", "config.py"),
+    "debug.py",
+    "lcd_rp2040lcd096.py",
+    "lcdlog.py",
+    "log.py",
+    "memlog.py",
+]
 
 def copy_to_pico(source, dest=None):
     dest = dest or source
@@ -7,31 +27,29 @@ def copy_to_pico(source, dest=None):
     if exit_code != 0:
         raise OSError(f"Command exited with {exit_code}\n")
 
+def is_mpremote_installed():
+    try:
+        import mpremote
+        return True
+    except ModuleNotFoundError:
+        return False
 
-print("Installing pico-alink to attached device with default settings")
+def main():
+    print("Installing pico-alink to attached device with default settings...")
 
-try:
-    import mpremote
-except ModuleNotFoundError:
-    raise FileNotFoundError("mpremote is not installed")
+    if not is_mpremote_installed():
+        stderr.write("    *** mpremote is not installed ***")
+        exit(1)
 
-with open("pico_config.py", "w") as cf:
-    cf.write("""MEM_LOG_SIZE = 500
-LCD_LOGGER = None
-STDOUT_LOGGER = False
-LOG_PING = False
-DEVICE_VERSION = 107
-DEBUG_LOCO = 9999
-""")
+    with open("pico_config.py", "w") as cf:
+        cf.write(CONFIG)
 
-copy_to_pico("alink.py")
-copy_to_pico("boot.py")
-copy_to_pico("com.py")
-copy_to_pico("pico_config.py", "config.py")
-copy_to_pico("debug.py")
-copy_to_pico("lcd_rp2040lcd096.py")
-copy_to_pico("lcdlog.py")
-copy_to_pico("log.py")
-copy_to_pico("memlog.py")
+    for file in FILES:
+        if isinstance(file, str):
+            file = (file,)
+        copy_to_pico(*file)
 
-print("Installation successful!")
+    print("Installation successful!")
+
+if __name__ == "__main__":
+    main()
