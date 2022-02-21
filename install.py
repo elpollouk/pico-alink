@@ -1,7 +1,9 @@
 import os
 from sys import stderr
 
-CONFIG = """MEM_LOG_SIZE = 500
+PICO_CONFIG_NAME = "pico_config.py"
+
+PICO_CONFIG = """MEM_LOG_SIZE = 500
 LCD_LOGGER = None
 STDOUT_LOGGER = False
 LOG_PING = False
@@ -13,7 +15,7 @@ FILES = [
     "alink.py",
     "main.py",
     "com.py",
-    ("pico_config.py", "config.py"),
+    (PICO_CONFIG_NAME, "config.py"),
     "debug.py",
     "lcd_rp2040lcd096.py",
     "lcdlog.py",
@@ -25,7 +27,8 @@ def copy_to_pico(source, dest=None):
     dest = dest or source
     exit_code = os.system(f"mpremote fs cp ./{source} :{dest}")
     if exit_code != 0:
-        raise OSError(f"Command exited with {exit_code}\n")
+        stderr.write(f"mpremote exited with exit code {exit_code}\n")
+        exit(exit_code)
 
 def is_mpremote_installed():
     try:
@@ -35,15 +38,20 @@ def is_mpremote_installed():
         return False
 
 def main():
-    print("Installing pico-alink to attached device with default settings...")
+    print("Installing pico-alink to attached device...")
 
     if not is_mpremote_installed():
         stderr.write("    *** mpremote is not installed ***")
         exit(1)
 
-    with open("pico_config.py", "w") as cf:
-        cf.write(CONFIG)
+    if os.path.exists(PICO_CONFIG_NAME):
+        print(f"Existing {PICO_CONFIG_NAME} found")
+    else:
+        print(f"Generating default {PICO_CONFIG_NAME}...")
+        with open(PICO_CONFIG_NAME, "w") as config:
+            config.write(PICO_CONFIG)
 
+    print("Copying files to device...")
     for file in FILES:
         if isinstance(file, str):
             file = (file,)
