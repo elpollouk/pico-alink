@@ -8,7 +8,7 @@ Debug menu can be accessed by sending `~` to the device using [mpremote](https:/
 
 ## Installation
 
-1. Install [mpreamote](https://docs.micropython.org/en/latest/reference/mpremote.html).
+1. Install [mpremote](https://docs.micropython.org/en/latest/reference/mpremote.html).
 2. Connect your [Raspberry Pi Pico](https://www.raspberrypi.com/products/raspberry-pi-pico/).
 3. Run install.py.
 4. Disconnect and reconnect your Pico.
