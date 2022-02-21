@@ -1,5 +1,7 @@
 # pyright: reportMissingImports=false
+import config
 import io
+import log
 import re
 import sys
 import time
@@ -16,6 +18,7 @@ class Terminated(Exception):
 ###################################################################################################
 # Parser for exceptions formatted by Micropython's sys.print_exception()
 ###################################################################################################
+
 class ParseException(io.IOBase):
     def __init__(self, ex):
         self.ex = ex
@@ -59,6 +62,44 @@ def inc_stat(stat):
 def add_stat(stat, value):
     value = STATS.get(stat, 0) + value
     STATS[stat] = value
+
+
+###################################################################################################
+# Misc Helpers
+###################################################################################################
+
+LED = None
+if IS_MICROPYTHON:
+    from machine import Pin
+    LED = Pin(config.LED_PIN, Pin.OUT)
+    LED.value(config.LED_INITIAL_VALUE)
+    log.info(f"Set pin {config.LED_PIN} to {config.LED_INITIAL_VALUE}")
+
+
+def led_toggle():
+    if LED:
+        LED.toggle()
+
+def led_value(value):
+    if LED:
+        LED.value(1 if value else 0)
+
+
+###################################################################################################
+# Debug Loco Functions
+###################################################################################################
+
+def function_view_stats(active):
+    if (active):
+        view_stats(log.info)
+
+def function_delete_mainpy(active):
+    if (active):
+        delete_mainpy(log.info)
+
+def function_exit_script(active):
+    if (active):
+        exit_script(log.info)
 
 
 ###################################################################################################
@@ -133,8 +174,9 @@ DEBUG_MENU_ITEMS = [
     ("1", "View log", view_log, ALL),
     ("2", "Stats", view_stats, ALL),
     ("3", "Memory info", mem_info, MICROPYTHON),
-    ("4", "Trigger exception", raise_exception, ALL),
-    ("5", "Delete main.py", delete_mainpy, MICROPYTHON),
+    ("4", "Toggle onboard led", lambda _: led_toggle(), MICROPYTHON),
+    ("5", "Trigger exception", raise_exception, ALL),
+    ("6", "Delete main.py", delete_mainpy, MICROPYTHON),
     ("x", "Exit script", exit_script, ALL)
 ]
 

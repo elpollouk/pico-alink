@@ -7,7 +7,7 @@ import log
 
 
 # Current version of this implementation
-VERSION = "v0.3"
+VERSION = "v0.4"
 
 # Loco function bit mapping by bank
 #   key: Bank number
@@ -22,9 +22,10 @@ FUNCTIONS = {
 
 # Functions available on the "debug" loco (9999 by default)
 DEBUG_FUNCTIONS = {
-    0: debug.view_stats,
-    27: debug.delete_mainpy,
-    28: debug.exit_script
+    0: debug.function_view_stats,
+    1: debug.led_value,
+    27: debug.function_delete_mainpy,
+    28: debug.function_exit_script
 }
 
 # CV data store
@@ -111,11 +112,9 @@ def debugFunctionHandler(bank, state):
     bit = 1
 
     for f in FUNCTIONS[bank]:
-        if state & bit:
-            action = DEBUG_FUNCTIONS.get(f, lambda _: None)
-            action(log.info)
-            return
-
+        active = state & bit != 0
+        action = DEBUG_FUNCTIONS.get(f, lambda _: None)
+        action(active)
         bit <<= 1
 
 
