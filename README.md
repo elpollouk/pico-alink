@@ -17,8 +17,9 @@ Debug menu can be accessed by sending `~` to the device using [mpremote](https:/
 
 It is possible to invoke debug functions by sending function requests to loco id `9999`. The supported functions are:
 
-|Function|Action|
-|---|---|
-| F0 | Write current run time stats to log |
-| F27 | Delete boot.py from Pico file system |
-| F28 | Exit the Python script |
+| Function | Type | Action |
+|---|---|---|
+| F0 | Trigger | Write current run time stats to log |
+| F1 | Latch | Toggle onboard LED |
+| F27 | Trigger | Delete boot.py from Pico file system |
+| F28 | Trigger | Exit the Python script |
