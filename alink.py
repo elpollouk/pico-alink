@@ -4,6 +4,7 @@ import com
 import config
 import debug
 import log
+import scheduler
 
 
 # Current version of this implementation
@@ -242,7 +243,7 @@ def main():
 
                 # Keep reading bytes until we reach the end of a recognised sequence
                 while True:
-                    c = com.read_byte()
+                    c = com.read_byte(scheduler.do_events, config.SCHEDULER_PERIOD)
                     buffer.append(c)
                     node = node.get(c, unrecognisedHandler)
                     if callable(node):
@@ -257,15 +258,7 @@ def main():
                 break
 
             except Exception as ex:
-                inc_stat("Exceptions")
-                if IS_MICROPYTHON:
-                    from debug import ParseException
-                    details = ParseException(ex)
-                    log.error(f"{details.type}: {details.message}")
-                    log.error(f"  {details.function}()")
-                    log.error(f"  {details.location}")
-                else:
-                    log.error(f"{type(ex).__name__}: {ex}")
+                debug.log_exception(ex)
 
     finally:
         binary_mode(False)

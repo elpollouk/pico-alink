@@ -1,6 +1,11 @@
 from sys import stdin, stdout
-from debug import add_stat
+from debug import add_stat, inc_stat, IS_MICROPYTHON
 import log
+
+if IS_MICROPYTHON:
+    import eventcom_micropy as eventcom
+else:
+    import eventcom_desktop as eventcom
 
 def to_hex(buffer):
     return " ".join([hex(v) for v in buffer])
@@ -34,7 +39,12 @@ def read(length):
     add_stat("Read", len(data))
     return data
 
-def read_byte():
+def read_byte(event_cb=None, period=None):
+    if event_cb:
+        event_cb()
+        b = eventcom.read_byte(event_cb, period)
+        inc_stat("Read")
+        return b
     return read(1)[0]
 
 def read_into_buffer(buffer, length=1):

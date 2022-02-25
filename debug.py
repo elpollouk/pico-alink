@@ -3,6 +3,7 @@ import config
 import io
 import log
 import re
+import scheduler
 import sys
 import time
 
@@ -50,6 +51,16 @@ class ParseException(io.IOBase):
     @property
     def location(self):
         return f"{self.file}:{self.line}"
+
+def log_exception(ex):
+    inc_stat("Exceptions")
+    if IS_MICROPYTHON:
+        details = ParseException(ex)
+        log.error(f"{details.type}: {details.message}")
+        log.error(f"  {details.function}()")
+        log.error(f"  {details.location}")
+    else:
+        log.error(f"{type(ex).__name__}: {ex}")
 
 
 ###################################################################################################
@@ -130,6 +141,14 @@ def raise_exception(out):
     out("Throwing exception...")
     raise AssertionError("Test Exception")
 
+def schedule_message(out):
+    out("Scheduling test messae in 5 seconds")
+    scheduler.run_in(5, log.info, ("Test",))
+
+def schedule_exception(out):
+    out("Scheduling test exception in 5 seconds")
+    scheduler.run_in(5, raise_exception, (lambda _: None,))
+
 def delete_mainpy(out):
     try:
         import os
@@ -176,7 +195,9 @@ DEBUG_MENU_ITEMS = [
     ("3", "Memory info", mem_info, MICROPYTHON),
     ("4", "Toggle onboard led", lambda _: led_toggle(), MICROPYTHON),
     ("5", "Trigger exception", raise_exception, ALL),
-    ("6", "Delete main.py", delete_mainpy, MICROPYTHON),
+    ("6", "Schedule test message", schedule_message, ALL),
+    ("7", "Schedule test exception", schedule_exception, ALL),
+    ("8", "Delete main.py", delete_mainpy, MICROPYTHON),
     ("x", "Exit script", exit_script, ALL)
 ]
 

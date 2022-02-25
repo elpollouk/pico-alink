@@ -19,10 +19,12 @@ FILES = [
     "com.py",
     (PICO_CONFIG_NAME, "config.py"),
     "debug.py",
+    "eventcom_micropy.py",
     "lcd_rp2040lcd096.py",
     "lcdlog.py",
     "log.py",
     "memlog.py",
+    "scheduler.py"
 ]
 
 def copy_to_pico(source, dest=None):
