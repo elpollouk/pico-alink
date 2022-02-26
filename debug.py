@@ -115,17 +115,16 @@ def function_exit_script(active):
     if (active):
         exit_script(log.info)
 
-def device_error():
+def activate_error():
     import com
     global is_errored
     is_errored = True
     com.write([0x61, 0x00, 0x61])
 
-
 def function_device_error(active):
     if active:
         log.warn(f"Will error in {debug_value}s")
-        scheduler.run_in(debug_value, device_error)
+        scheduler.run_in(debug_value, activate_error)
     else:
         global is_errored
         log.info("Clearing error state")
@@ -133,7 +132,7 @@ def function_device_error(active):
 
 
 ###################################################################################################
-# Debug Menu
+# Debug Menu Actions
 ###################################################################################################
 
 def return_to_alink(out):
@@ -184,6 +183,11 @@ def delete_mainpy(out):
 def exit_script(out):
     out("Exit requested")
     raise Terminated()
+
+
+###################################################################################################
+# Debug Menu Handler
+###################################################################################################
 
 def should_display(item):
     return item[3] == ALL or IS_MICROPYTHON
