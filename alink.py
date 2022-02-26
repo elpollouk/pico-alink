@@ -8,7 +8,7 @@ import scheduler
 
 
 # Current version of this implementation
-VERSION = "v0.4"
+VERSION = "v0.5"
 
 # Loco function bit mapping by bank
 #   key: Bank number
@@ -25,20 +25,21 @@ FUNCTIONS = {
 DEBUG_FUNCTIONS = {
     0: debug.function_view_stats,
     1: debug.led_value,
+    26: debug.function_device_error,
     27: debug.function_delete_mainpy,
     28: debug.function_exit_script
 }
 
 # CV data store
 current_cv = 0
-cvs = [0] * 256
-cvs[1] = 3
-cvs[3] = 5
-cvs[4] = 5
-cvs[7] = 100
-cvs[8] = 255
-cvs[10] = 128
-cvs[29] = 6
+CVS = [0] * 256
+CVS[1] = 3
+CVS[3] = 5
+CVS[4] = 5
+CVS[7] = 100
+CVS[8] = 255
+CVS[10] = 128
+CVS[29] = 6
 
 
 ###################################################################################################
@@ -84,7 +85,10 @@ def unrecognisedHandler(buffer):
 def pingHandler(_):
     if (config.LOG_PING):
         log.info("Ping request")
-    com.write_with_checksum((0x62, 0x22, 0x40))
+    if debug.is_errored:
+        com.write_with_checksum((0x62, 0x22, 0xc1))
+    else:
+        com.write_with_checksum((0x62, 0x22, 0x40))
 
 
 def versionHandler(_):
@@ -107,6 +111,12 @@ def locoSpeedHandler(buffer):
     log.info(f" Loco: {loco}")
     log.info(f" Speed: {speed}")
     log.info(f" Forward: {forward}")
+
+    if loco == config.DEBUG_LOCO:
+        debug.debug_value = speed
+        if not forward:
+            debug.debug_value += 128
+        log.warn(f"Debug value = {debug.debug_value}")
 
 
 def debugFunctionHandler(bank, state):
@@ -171,8 +181,8 @@ def cvSelectHandler(buffer):
 
 def cvReadHandler(_):
     log.info(f"Reading CV {current_cv}")
-    log.info(f" Value: {cvs[current_cv]}")
-    com.write_with_checksum((0x63, 0x14, current_cv, cvs[current_cv]))
+    log.info(f" Value: {CVS[current_cv]}")
+    com.write_with_checksum((0x63, 0x14, current_cv, CVS[current_cv]))
 
 
 def cvWriteHandler(buffer):
@@ -187,7 +197,7 @@ def cvWriteHandler(buffer):
     log.info(f" Value: {value}")
 
     current_cv = cv
-    cvs[cv] = value
+    CVS[cv] = value
 
     com.write_with_checksum((0x61, 0x02))
     com.write_with_checksum((0x61, 0x02))

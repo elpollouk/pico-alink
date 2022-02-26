@@ -100,6 +100,9 @@ def led_value(value):
 # Debug Loco Functions
 ###################################################################################################
 
+debug_value = 0
+is_errored = False
+
 def function_view_stats(active):
     if (active):
         view_stats(log.info)
@@ -111,6 +114,22 @@ def function_delete_mainpy(active):
 def function_exit_script(active):
     if (active):
         exit_script(log.info)
+
+def device_error():
+    import com
+    global is_errored
+    is_errored = True
+    com.write([0x61, 0x00, 0x61])
+
+
+def function_device_error(active):
+    if active:
+        log.warn(f"Will error in {debug_value}s")
+        scheduler.run_in(debug_value, device_error)
+    else:
+        global is_errored
+        log.info("Clearing error state")
+        is_errored = False
 
 
 ###################################################################################################
@@ -148,6 +167,10 @@ def schedule_message(out):
 def schedule_exception(out):
     out("Scheduling test exception in 5 seconds")
     scheduler.run_in(5, raise_exception, (lambda _: None,))
+
+def toggle_error_state(out):
+    out(f"Requesting error state: {not is_errored}")
+    function_device_error(not is_errored)
 
 def delete_mainpy(out):
     try:
@@ -197,7 +220,8 @@ DEBUG_MENU_ITEMS = [
     ("5", "Trigger exception", raise_exception, ALL),
     ("6", "Schedule test message", schedule_message, ALL),
     ("7", "Schedule test exception", schedule_exception, ALL),
-    ("8", "Delete main.py", delete_mainpy, MICROPYTHON),
+    ("8", "Toggle error state", toggle_error_state, ALL),
+    ("9", "Delete main.py", delete_mainpy, MICROPYTHON),
     ("x", "Exit script", exit_script, ALL)
 ]
 
