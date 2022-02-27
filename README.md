@@ -19,7 +19,8 @@ It is possible to invoke debug functions by sending function requests to loco id
 
 | Function | Type | Action |
 |---|---|---|
-| F0 | Trigger | Write current run time stats to log |
-| F1 | Latch | Toggle onboard LED |
-| F27 | Trigger | Delete boot.py from Pico file system |
-| F28 | Trigger | Exit the Python script |
+| F0 | Trigger | Write current run time stats to log. |
+| F1 | Latch | Toggle onboard LED. |
+| F26 | Latch | Simulate device error. Set loco speed to specify the number of seconds to wait before entering the error state. |
+| F27 | Trigger | Delete boot.py from Pico file system. |
+| F28 | Trigger | Exit the Python script. |
