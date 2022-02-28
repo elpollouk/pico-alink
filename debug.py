@@ -118,17 +118,21 @@ def function_exit_script(active):
 def activate_error():
     import com
     global is_errored
+    log.warn("Entering error state")
     is_errored = True
     com.write([0x61, 0x00, 0x61])
+
+def clear_error():
+    global is_errored
+    log.info("Clearing error state")
+    is_errored = False
 
 def function_device_error(active):
     if active:
         log.warn(f"Will error in {debug_value}s")
         scheduler.run_in(debug_value, activate_error)
     else:
-        global is_errored
-        log.info("Clearing error state")
-        is_errored = False
+        clear_error()
 
 
 ###################################################################################################
@@ -148,6 +152,7 @@ def view_stats(out):
     mm = int(ss / 60)
     ss -= (mm * 60)
     out(f"Uptime: {mm:02d}:{ss:02d}")
+    out(f"Is Errored: {is_errored}")
     for k, v in STATS.items():
         out(f"{k}: {v}")
 
