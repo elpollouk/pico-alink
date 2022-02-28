@@ -8,7 +8,7 @@ import scheduler
 
 
 # Current version of this implementation
-VERSION = "v0.5"
+VERSION = "v0.6"
 
 # Loco function bit mapping by bank
 #   key: Bank number
@@ -94,6 +94,11 @@ def pingHandler(_):
 def versionHandler(_):
     log.info("Version request")
     com.write_with_checksum((0x63, 0x21, config.DEVICE_VERSION, 0x01))
+
+
+def clearErrorHandler(_):
+    debug.clear_error()
+    com.write_with_checksum((0x62, 0x22, 0x40))
 
 
 def locoSpeedHandler(buffer):
@@ -219,6 +224,7 @@ ROOT_HANDLERS = [
     ((0x21, 0x10, 0x31), cvReadHandler),
     ((0x21, 0x21, 0x00), versionHandler),
     ((0x21, 0x24, 0x05), pingHandler),
+    ((0x21, 0x81, 0xa0), clearErrorHandler),
     ((0x22, 0x15), cvSelectHandler),
     ((0x23, 0x16), cvWriteHandler),
     ((0xE4, 0x13), locoSpeedHandler),
